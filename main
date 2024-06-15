@@ -1,0 +1,648 @@
+ -- Load the Rayfield library
+ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+ -- Specify the default fullbright values
+ local defaultFullbright = {
+     Brightness = 2,
+     ClockTime = 14,
+     FogEnd = 100000,
+     GlobalShadows = false,
+     OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+ }
+
+ -- Create the main window
+ local Window = Rayfield:CreateWindow({
+     Name = "Survive and Kill the Killers in Area 51 | OMGHUB | 1.1",
+     LoadingTitle = "OMGHUB",
+     LoadingSubtitle = "Private Access",
+     ConfigurationSaving = {
+         Enabled = true,
+         FolderName = nil,
+         FileName = "Area51Hub"
+     },
+     Discord = {
+         Enabled = false,
+         Invite = "noinvitelink",
+         RememberJoins = true
+     },
+     KeySystem = false,
+     KeySettings = {
+         Title = "Untitled",
+         Subtitle = "Key System",
+         Note = "No method of obtaining the key is provided",
+         FileName = "Key",
+         SaveKey = true,
+         GrabKeyFromSite = false,
+         Key = {"Hello"}
+     }
+ })
+
+ -- Create a general tab
+ local GeneralTab = Window:CreateTab("General", 4483362458)
+
+ -- Create sections in the general tab
+ local GeneralSection = GeneralTab:CreateSection("General Settings")
+
+ -- Create a toggle for Fullbright
+ local defaultSettings = {
+     Brightness = game.Lighting.Brightness,
+     ClockTime = game.Lighting.ClockTime,
+     FogEnd = game.Lighting.FogEnd,
+     GlobalShadows = game.Lighting.GlobalShadows,
+     OutdoorAmbient = game.Lighting.OutdoorAmbient
+ }
+
+ local fullbrightEnabled = false
+ local fullbrightLoop
+
+ local function enableFullbright()
+     game.Lighting.Brightness = 2
+     game.Lighting.ClockTime = 12
+     game.Lighting.FogEnd = 1e6
+     game.Lighting.GlobalShadows = false
+     game.Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+ end
+
+ local function disableFullbright()
+     game.Lighting.Brightness = defaultSettings.Brightness
+     game.Lighting.ClockTime = defaultSettings.ClockTime
+     game.Lighting.FogEnd = defaultSettings.FogEnd
+     game.Lighting.GlobalShadows = defaultSettings.GlobalShadows
+     game.Lighting.OutdoorAmbient = defaultSettings.OutdoorAmbient
+ end
+
+ local FullbrightToggle = GeneralTab:CreateToggle({
+     Name = "Fullbright",
+     CurrentValue = false,
+     Flag = "FullbrightToggle",
+     Callback = function(Value)
+         fullbrightEnabled = Value
+         if fullbrightEnabled then
+             enableFullbright()
+             fullbrightLoop = game:GetService("RunService").RenderStepped:Connect(function()
+                 if game.Lighting.Brightness ~= 2 or 
+                 game.Lighting.ClockTime ~= 12 or 
+                 game.Lighting.FogEnd ~= 1e6 or 
+                 game.Lighting.GlobalShadows ~= false or 
+                 game.Lighting.OutdoorAmbient ~= Color3.fromRGB(128, 128, 128) then
+                     enableFullbright()
+                 end
+             end)
+         else
+             if fullbrightLoop then fullbrightLoop:Disconnect() end
+             disableFullbright()
+         end
+     end,
+ })
+
+ -- Create a toggle to disable collision for doors and change transparency
+ local originalCollisionStates = {}
+ local originalTransparencyStates = {}
+ local originalDecalTransparencyStates = {}
+
+ local function disableCollisionForDoors()
+     local Doors = workspace:FindFirstChild("Doors")
+     if not Doors then return end
+
+     local function setCollisionAndTransparency(model)
+         for _, child in pairs(model:GetDescendants()) do
+             if child:IsA("BasePart") and child.Name == "Door" then
+                 originalCollisionStates[child] = child.CanCollide
+                 originalTransparencyStates[child] = child.Transparency
+                 child.CanCollide = false
+                 child.Transparency = 0.5
+
+                 for _, decal in pairs(child:GetDescendants()) do
+                     if decal:IsA("Decal") then
+                         originalDecalTransparencyStates[decal] = decal.Transparency
+                         decal.Transparency = 0.5
+                     end
+                 end
+             end
+         end
+     end
+
+     for _, modelName in ipairs({"Horizontal", "Vertical"}) do
+         local model = Doors:FindFirstChild(modelName)
+         if model then
+             for _, subModel in pairs(model:GetChildren()) do
+                 setCollisionAndTransparency(subModel)
+             end
+         end
+     end
+ end
+
+ local function restoreCollisionForDoors()
+     for part, state in pairs(originalCollisionStates) do
+         if part and part:IsA("BasePart") then
+             part.CanCollide = state
+         end
+     end
+     originalCollisionStates = {}
+
+     for part, state in pairs(originalTransparencyStates) do
+         if part and part:IsA("BasePart") then
+             part.Transparency = state
+         end
+     end
+     originalTransparencyStates = {}
+
+     for decal, state in pairs(originalDecalTransparencyStates) do
+         if decal and decal:IsA("Decal") then
+             decal.Transparency = state
+         end
+     end
+     originalDecalTransparencyStates = {}
+ end
+
+ local DoorsToggle = GeneralTab:CreateToggle({
+     Name = "Disable Doors Collision",
+     CurrentValue = false,
+     Flag = "DoorsToggle",
+     Callback = function(Value)
+         if Value then
+             disableCollisionForDoors()
+         else
+             restoreCollisionForDoors()
+         end
+     end,
+ })
+
+
+ -- Create sections in the general tab
+ local GunSection = GeneralTab:CreateSection("Gun Settings")
+
+
+
+ local INFAMMOToggle = GeneralTab:CreateToggle({
+     Name = "Infinite Ammo",
+     CurrentValue = false,
+     Flag = "BoxOfShellsToggle",
+     Callback = function(Value)
+         local plrRootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
+         local touchPart = game:GetService("Workspace").AREA51.PlantRoom["Box of Shells"].Box
+         touchPart.Transparency = 1
+
+         -- Make the decal transparent
+         for _, child in ipairs(touchPart:GetChildren()) do
+             if child:IsA("Decal") then
+                 child.Transparency = 1
+             end
+         end
+
+         if Value then
+             -- Start touching the Box of Shells
+             _G.BoxOfShellsToggle = true
+             spawn(function()
+                 while _G.BoxOfShellsToggle do
+                     firetouchinterest(plrRootPart, touchPart, 0)
+                     wait(0.05)
+                     firetouchinterest(plrRootPart, touchPart, 1)
+                     wait(0.05)
+                 end
+             end)
+         else
+             -- Stop touching the Box of Shells
+             _G.BoxOfShellsToggle = false
+         end
+     end,
+ })
+
+
+
+
+
+
+ -- Create a teleports tab
+ local TeleportsTab = Window:CreateTab("Teleports", nil)
+
+ -- Create a teleports section
+ local TeleportsSection = TeleportsTab:CreateSection("Teleports")
+
+ -- Create a button to teleport the player to the spawn location
+ local SpawnButton = TeleportsTab:CreateButton({
+     Name = "Spawn",
+     Callback = function()
+         local player = game.Players.LocalPlayer
+         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+             player.Character.HumanoidRootPart.CFrame = CFrame.new(348, 511, 369)
+         end
+     end,
+ })
+
+ -- Create a button to teleport the player to the underground location
+ local UnderGroundButton = TeleportsTab:CreateButton({
+     Name = "UnderGround",
+     Callback = function()
+         local player = game.Players.LocalPlayer
+         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+             player.Character.HumanoidRootPart.CFrame = CFrame.new(323, 313, 370)
+         end
+     end,
+ })
+
+ -- Create a button to teleport the player to the mainhall location
+ local MainHallButton = TeleportsTab:CreateButton({
+     Name = "MainHall",
+     Callback = function()
+         local player = game.Players.LocalPlayer
+         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+             player.Character.HumanoidRootPart.CFrame = CFrame.new(61, 313, 366)
+         end
+     end,
+ })
+
+ -- Create a button to teleport the player to the RayGun location
+ local RayGunButton = TeleportsTab:CreateButton({
+     Name = "RayGun",
+     Callback = function()
+         local player = game.Players.LocalPlayer
+         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+             player.Character.HumanoidRootPart.CFrame = CFrame.new(114, 335, 564)
+         end
+     end,
+ })
+
+ -- Create a button to teleport the player to the powerpunch location
+ local PackButton = TeleportsTab:CreateButton({
+     Name = "PackAPunch",
+     Callback = function()
+         local player = game.Players.LocalPlayer
+         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+             player.Character.HumanoidRootPart.CFrame = CFrame.new(276, 323, 784)
+         end
+     end,
+ })
+
+ -- Create a button to teleport the player to the Armor location
+ local ArmorButton = TeleportsTab:CreateButton({
+     Name = "Armor",
+     Callback = function()
+         local player = game.Players.LocalPlayer
+         if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+             player.Character.HumanoidRootPart.CFrame = CFrame.new(-170, 293, 315)
+         end
+     end,
+ })
+
+
+
+ local ESPTab = Window:CreateTab("ESP", nil)
+
+ local ESPSection = ESPTab:CreateSection("ESP Stuff")
+
+ local ESPBoxes = {}
+ local ESPTexts = {}
+ local espColor = Color3.new(1, 0, 0) -- Default color is red
+ local textColor = Color3.new(1, 1, 1) -- Default text color is white
+ local espThickness = 1 -- Default thickness
+ local maxDistance = 1000 -- Maximum distance for ESPs to be drawn
+
+ local function createESP(model)
+     if model.Name == "Giant" then return end
+
+     local rootPart = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+     if not rootPart then return end
+
+     local function isWithinScreenBounds(position)
+         local viewportSize = workspace.CurrentCamera.ViewportSize
+         local screenPosition = workspace.CurrentCamera:WorldToScreenPoint(position)
+         return screenPosition.X >= 0 and screenPosition.X <= viewportSize.X and screenPosition.Y >= 0 and screenPosition.Y <= viewportSize.Y
+     end
+
+     local box = Drawing.new("Square")
+     box.Visible = false -- Start as invisible
+     box.Color = espColor
+     box.Thickness = espThickness
+     box.Filled = false
+     ESPBoxes[model] = box
+
+     local text = Drawing.new("Text")
+     text.Visible = false -- Start as invisible
+     text.Color = textColor
+     text.Size = 18
+     text.Center = true
+     text.Outline = true
+     text.Text = model.Name
+     ESPTexts[model] = text
+
+     spawn(function()
+         while ESPBoxes[model] and ESPTexts[model] and model.Parent do
+             local rootPartPos = rootPart.Position
+             local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(rootPartPos)
+             local distance = (rootPartPos - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+
+             if onScreen and distance <= maxDistance and isWithinScreenBounds(rootPartPos) then
+                 -- Update ESP if the model is on screen and within the max distance
+                 local modelSize = model:GetExtentsSize()
+                 local screenSize = workspace.CurrentCamera:WorldToViewportPoint(rootPartPos + modelSize / 2) - workspace.CurrentCamera:WorldToViewportPoint(rootPartPos - modelSize / 2)
+
+                 box.Size = Vector2.new(math.abs(screenSize.X), math.abs(screenSize.Y))
+                 box.Position = Vector2.new(screenPos.X - box.Size.X / 2, screenPos.Y - box.Size.Y / 2)
+                 box.Visible = true
+
+                 text.Position = Vector2.new(screenPos.X, screenPos.Y - box.Size.Y / 2 - text.Size)
+                 text.Visible = true
+             else
+                 -- Hide ESP if the model is not on screen or too far away
+                 box.Visible = false
+                 text.Visible = false
+             end
+
+             if not model.Parent then
+                 removeESP(model)
+                 break
+             end
+
+             wait()
+         end
+         removeESP(model)
+     end)
+ end
+
+ local function removeESP(model)
+     if ESPBoxes[model] then
+         ESPBoxes[model]:Remove()
+         ESPBoxes[model] = nil
+     end
+     if ESPTexts[model] then
+         ESPTexts[model]:Remove()
+         ESPTexts[model] = nil
+     end
+ end
+
+ local KillersESPToggle = ESPTab:CreateToggle({
+     Name = "Killers ESP Toggle",
+     CurrentValue = false,
+     Flag = "KillersESPToggle",
+     Callback = function(Value)
+         local killers = game:GetService("Workspace"):FindFirstChild("Killers")
+         if not killers then return end
+
+         if Value then
+             -- Enable ESP for Killers
+             _G.KillersESPToggle = true
+             for _, model in ipairs(killers:GetChildren()) do
+                 if model:IsA("Model") and model.Name ~= "Giant" then
+                     createESP(model)
+                 end
+             end
+         else
+             -- Disable ESP for Killers
+             _G.KillersESPToggle = false
+             for _, model in ipairs(killers:GetChildren()) do
+                 if model:IsA("Model") and model.Name ~= "Giant" then
+                     removeESP(model)
+                 end
+             end
+         end
+     end,
+ })
+
+ local ColorPickerESP = ESPTab:CreateColorPicker({
+     Name = "ESP Color",
+     Color = espColor,
+     Flag = "ESPColor",
+     Callback = function(Value)
+         espColor = Value
+         -- Update the color of existing ESP boxes
+         for model, box in pairs(ESPBoxes) do
+             box.Color = espColor
+         end
+     end
+ })
+
+ local ColorPickerText = ESPTab:CreateColorPicker({
+     Name = "Text Color",
+     Color = textColor,
+     Flag = "TextColor",
+     Callback = function(Value)
+         textColor = Value
+         -- Update the color of existing ESP texts
+         for model, text in pairs(ESPTexts) do
+             text.Color = textColor
+         end
+     end
+ })
+
+ local ESPThicknessSlider = ESPTab:CreateSlider({
+     Name = "ESP Thickness",
+     Range = {1, 5}, -- Adjust range as needed
+     Increment = 1,
+     Suffix = " px",
+     CurrentValue = espThickness,
+     Flag = "ESPThickness",
+     Callback = function(Value)
+         espThickness = Value
+         -- Update the thickness of existing ESP boxes
+         for model, box in pairs(ESPBoxes) do
+             box.Thickness = espThickness
+         end
+     end,
+ })
+
+ -- Keep track of new models being added or removed
+ workspace.Killers.ChildAdded:Connect(function(child)
+     if _G.KillersESPToggle and child:IsA("Model") and child.Name ~= "Giant" then
+         createESP(child)
+     end
+ end)
+
+ workspace.Killers.ChildRemoved:Connect(function(child)
+     if child:IsA("Model") and child.Name ~= "Giant" then
+         removeESP(child)
+     end
+ end)
+
+
+local ESPSection = ESPTab:CreateSection("PlayerESP")
+
+local ESPBoxes = {}
+local ESPTexts = {}
+local espColor = Color3.new(1, 0, 0) -- Default color is red
+local textColor = Color3.new(1, 1, 1) -- Default text color is white
+local espThickness = 1 -- Default thickness
+local maxDistance = 1000 -- Maximum distance for ESPs to be drawn
+
+-- Function to create ESP for players
+local function createPlayerESP(player)
+    local character = player.Character
+    if not character then return end
+
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+
+    local box = Drawing.new("Square")
+    box.Visible = false -- Start as invisible
+    box.Color = espColor
+    box.Thickness = espThickness
+    box.Filled = false
+    box.Transparency = 1 -- Set transparency to 1 to ensure it's behind UI elements
+    ESPBoxes[player] = box
+
+    local text = Drawing.new("Text")
+    text.Visible = false -- Start as invisible
+    text.Color = textColor
+    text.Size = 18
+    text.Center = true
+    text.Outline = true
+    text.Text = player.Name
+    text.Transparency = 1 -- Set transparency to 1 to ensure it's behind UI elements
+    ESPTexts[player] = text
+
+    spawn(function()
+        while ESPBoxes[player] and ESPTexts[player] and player.Parent do
+            local character = player.Character
+            if not character then
+                removePlayerESP(player)
+                break
+            end
+
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if not humanoidRootPart then
+                removePlayerESP(player)
+                break
+            end
+
+            local distance = (humanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position)
+
+            if onScreen and distance <= maxDistance then
+                -- Update ESP if the player is on screen and within the max distance
+                local modelSize = character:GetExtentsSize()
+                local screenSize = workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position + modelSize / 2) - workspace.CurrentCamera:WorldToViewportPoint(humanoidRootPart.Position - modelSize / 2)
+
+                box.Size = Vector2.new(math.abs(screenSize.X), math.abs(screenSize.Y))
+                box.Position = Vector2.new(screenPos.X - box.Size.X / 2, screenPos.Y - box.Size.Y / 2)
+                box.Visible = true
+
+                text.Position = Vector2.new(screenPos.X, screenPos.Y - box.Size.Y / 2 - text.Size)
+                text.Visible = true
+            else
+                -- Hide ESP if the player is not on screen or too far away
+                box.Visible = false
+                text.Visible = false
+            end
+
+            wait()
+        end
+        removePlayerESP(player)
+    end)
+end
+
+-- Function to remove ESP for players
+local function removePlayerESP(player)
+    if ESPBoxes[player] then
+        ESPBoxes[player]:Remove()
+        ESPBoxes[player] = nil
+    end
+    if ESPTexts[player] then
+        ESPTexts[player]:Remove()
+        ESPTexts[player] = nil
+    end
+end
+
+-- Toggle for Player ESP
+local PlayersESPToggle = ESPTab:CreateToggle({
+    Name = "Players ESP Toggle",
+    CurrentValue = false,
+    Flag = "PlayersESPToggle",
+    Callback = function(Value)
+        _G.PlayersESPToggle = Value
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                if Value then
+                    -- Enable ESP for players
+                    createPlayerESP(player)
+                else
+                    -- Disable ESP for players
+                    removePlayerESP(player)
+                end
+            end
+        end
+    end,
+})
+
+local PLayerColorPickerESP = ESPTab:CreateColorPicker({
+    Name = "ESP Color",
+    Color = espColor,
+    Flag = "ESPColor",
+    Callback = function(Value)
+        espColor = Value
+        -- Update the color of existing ESP boxes
+        for player, box in pairs(ESPBoxes) do
+            box.Color = espColor
+        end
+    end
+})
+
+local PlayerColorPickerText = ESPTab:CreateColorPicker({
+    Name = "Text Color",
+    Color = textColor,
+    Flag = "TextColor",
+    Callback = function(Value)
+        textColor = Value
+        -- Update the color of existing ESP texts
+        for player, text in pairs(ESPTexts) do
+            text.Color = textColor
+        end
+    end
+})
+
+local PlayerESPThicknessSlider = ESPTab:CreateSlider({
+    Name = "ESP Thickness",
+    Range = {1, 5}, -- Adjust range as needed
+    Increment = 1,
+    Suffix = " px",
+    CurrentValue = espThickness,
+    Flag = "ESPThickness",
+    Callback = function(Value)
+        espThickness = Value
+        -- Update the thickness of existing ESP boxes
+        for player, box in pairs(ESPBoxes) do
+            box.Thickness = espThickness
+        end
+    end,
+})
+
+-- Keep track of new players being added or removed
+game.Players.PlayerAdded:Connect(function(player)
+    if _G.PlayersESPToggle then
+        createPlayerESP(player)
+    end
+end)
+
+game.Players.PlayerRemoving:Connect(function(player)
+    removePlayerESP(player)
+end)
+
+
+
+
+ -- OtherScriptsTab
+
+ local OtherTab = Window:CreateTab("OtherScripts", nil)
+
+ -- infyield
+
+ local ScriptsSection = OtherTab:CreateSection("Scripts")
+ 
+ local InfinteButton = OtherTab:CreateButton({
+     Name = "Infinte Yield",
+     Callback = function()
+         loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()    -- The function that takes place when the button is pressed
+     end,
+ })
+
+ -- Destroy tab
+
+ local DestroyTab = Window:CreateTab("Terminate", nil)
+
+ -- Destroy button
+
+ local DestroyButton = DestroyTab:CreateButton({
+     Name = "DestroyGUI",
+     Callback = function()
+         Rayfield:Destroy()
+     end,
+ })

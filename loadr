@@ -1,0 +1,18 @@
+local placeId = game.PlaceId
+local creator = game.CreatorId
+
+local function isOwnedBy(userId)
+    return userId == 60100179 
+end
+
+if isOwnedBy(creator) then
+    if placeId == 2675280735 then
+        loadstring(game:HttpGet(("https://raw.githubusercontent.com/valusee/surviveandkill/main/saktia51%20endless")))()
+    elseif placeId == 155382109 then
+        print("Execute ingame")
+    else
+        loadstring(game:HttpGet(("https://raw.githubusercontent.com/valusee/surviveandkill/main/main")))()
+    end
+else
+    print("Unsupported Game")
+end
